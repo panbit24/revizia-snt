@@ -340,9 +340,7 @@ function enter(id) {
 function options(o) {
   // `once` — опция срабатывает один раз за партию. Без неё выгодные исходы
   // (например, тот, что отматывает время назад) фармятся до бесконечности.
-  const list = o.options
-    .map((opt, i) => ({ opt, key: 'o' + i }))
-    .filter(({ opt, key }) => !(opt.once && S.used[o.id + ':' + key]));
+  const list = o.options.map((opt, i) => ({ opt, key: 'o' + i }));
 
   // Универсальные опции — только там, где вообще нужна виза: иначе игрок
   // спустит взятку в кабинете выдачи предметов и закроет его себе навсегда.
@@ -351,13 +349,15 @@ function options(o) {
   if (o.required || o.final) {
     for (const [name, opt] of Object.entries(GAME.generic)) {
       if (name === 'leave') continue;
-      const available = opt.use ? S.items[opt.use] : S.chocolate > 0;
+      const available = opt.free ? true : (opt.use ? S.items[opt.use] : S.chocolate > 0);
       if (available) list.push({ opt, key: 'g_' + name });
     }
   }
   list.push({ opt: GAME.generic.leave, key: 'g_leave' });
 
-  return list;
+  // `once` — опция срабатывает один раз за партию в этом месте. Без неё
+  // выгодные исходы (шутка с шансом на подпись, транспорт) фармятся бесконечно.
+  return list.filter(({ opt, key }) => !(opt.once && S.used[o.id + ':' + key]));
 }
 
 function renderScene(o, text, result, fx) {
