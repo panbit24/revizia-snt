@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОГЛАСОВАНИЕ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%8C</text></svg>">
+<style>
+  :root {
+    --paper: #f2e9d8;
+    --paper-dark: #e6dac2;
+    --ink: #2b2620;
+    --ink-soft: #6b6154;
+    --stamp: #b3252a;
+    --line: #c8b99c;
+    --ok: #2f6b3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #3a3630;
+    background-image: radial-gradient(circle at 50% 0%, #4a453c, #2a2722);
+    color: var(--ink);
+    font-family: "Courier New", Courier, monospace;
+    font-size: 16px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 27px, rgba(0,0,0,.025) 27px 28px);
+    border: 1px solid #1c1a17;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    padding: 22px 26px 30px;
+  }
+
+  h1 { font-size: 26px; letter-spacing: 6px; margin: 0; text-align: center; }
+  .sub {
+    text-align: center; color: var(--ink-soft); font-size: 13px;
+    margin: 6px 0 18px; font-style: italic;
+  }
+
+  /* ——— статус-бар ——— */
+  .status {
+    display: flex; flex-wrap: wrap; gap: 10px 18px;
+    border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+    padding: 9px 0; margin-bottom: 18px; font-size: 14px;
+  }
+  .status b { font-weight: bold; }
+  .bar {
+    display: inline-block; width: 90px; height: 10px; vertical-align: middle;
+    border: 1px solid var(--ink); background: var(--paper-dark); margin-left: 4px;
+  }
+  .bar > i { display: block; height: 100%; background: var(--stamp); }
+  .bar.calm > i { background: var(--ok); }
+
+  .inv { font-size: 13px; color: var(--ink-soft); margin-bottom: 16px; }
+  .inv span { margin-right: 12px; white-space: nowrap; }
+
+  /* ——— карта здания ——— */
+  .office {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: transparent; border: 1px solid var(--line);
+    border-left: 4px solid var(--line);
+    padding: 10px 12px; margin-bottom: 8px;
+    font-family: inherit; font-size: 15px; color: var(--ink);
+    transition: background .12s, border-color .12s;
+  }
+  .office:hover:not(:disabled) { background: var(--paper-dark); border-left-color: var(--stamp); }
+  .office:disabled { cursor: default; opacity: .55; }
+  .office .room { color: var(--ink-soft); font-size: 12.5px; }
+  .office .tag { float: right; font-size: 12px; letter-spacing: 1px; }
+  .office.done { border-left-color: var(--ok); }
+  .office.done .tag { color: var(--ok); }
+  .office.locked .tag { color: var(--ink-soft); }
+
+  /* ——— сцена кабинета ——— */
+  .scene-head { border-bottom: 1px dashed var(--line); padding-bottom: 10px; margin-bottom: 14px; }
+  .scene-head .who { font-size: 20px; }
+  .scene-head .room { color: var(--ink-soft); font-size: 13px; }
+  .text { white-space: pre-wrap; margin-bottom: 18px; }
+  .result {
+    white-space: pre-wrap; border-left: 3px solid var(--stamp);
+    padding: 4px 0 4px 14px; margin-bottom: 16px;
+  }
+  .fx { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+  .fx b { color: var(--stamp); }
+  .fx b.plus { color: var(--ok); }
+
+  .opt {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: transparent; border: 1px solid var(--line);
+    padding: 10px 12px; margin-bottom: 8px;
+    font-family: inherit; font-size: 15px; color: var(--ink);
+  }
+  .opt:hover:not(:disabled) { background: var(--paper-dark); border-color: var(--ink); }
+  .opt:disabled { cursor: default; color: var(--ink-soft); border-style: dashed; }
+  .opt .need { display: block; font-size: 12px; font-style: italic; }
+
+  /* ——— печать ——— */
+  .stamp {
+    display: inline-block; border: 3px double var(--stamp); color: var(--stamp);
+    padding: 6px 16px; font-weight: bold; letter-spacing: 3px;
+    transform: rotate(-7deg); margin: 6px 0 18px;
+  }
+  .final { text-align: center; padding: 10px 0; }
+  .final h2 { letter-spacing: 4px; margin: 10px 0; }
+  .final .text { text-align: left; }
+  .rank { font-size: 13px; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 12px; }
+
+  /* ——— телефон ———
+     Тег кабинета уходит из float в отдельную строку: иначе он наползает
+     на длинные названия. Кнопки добираются до 44px — минимум под палец. */
+  @media (max-width: 460px) {
+    body { padding: 8px; }
+    #app { padding: 16px 14px 24px; }
+    h1 { font-size: 20px; letter-spacing: 3px; }
+    .sub { font-size: 12px; margin-bottom: 14px; }
+    .status { gap: 6px 14px; font-size: 13px; }
+    .office, .opt { padding: 12px; min-height: 44px; }
+    .office .tag { float: none; display: block; margin-bottom: 3px; }
+    .scene-head .who { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Тон игры переключается здесь: content-18.js (18+) или content.js (приличный). -->
+<script src="content-18.js"></script>
+<script>
+/* ==========================================================================
+   Движок. Ничего про конкретных чиновников не знает — только про правила.
+   Весь текст и баланс живут в content.js.
+   ========================================================================== */
+
+let S;  // состояние партии
+
+function newGame() {
+  document.title = GAME.meta.title;   // вкладка следует за контентом, а не за файлом
+  S = {
+    nerves: GAME.start.nerves,
+    time: GAME.start.time,
+    chocolate: GAME.start.chocolate,
+    items: {},          // itemId -> true
+    stamps: {},         // officeId -> true
+    fails: {},          // officeId -> сколько раз ушёл без визы
+    used: {},           // одноразовые опции (once), ключ officeId:key
+    travelCost: 5,      // минут на переход; транспорт по сюжету его удешевляет
+    seen: {},           // officeId -> true (был хотя бы раз)
+    revealed: {},       // officeId -> true (для hidden-кабинетов)
+    over: null,         // 'win' | 'nerves' | 'time'
+  };
+  renderMap();
+}
+
+/* ——— вспомогательное ——— */
+
+const clock = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const office = id => GAME.offices.find(o => o.id === id);
+const isLunch = () => S.time >= GAME.lunch.from && S.time < GAME.lunch.to;
+
+// Кабинет виден на карте: не скрыт, либо уже открыт через reveal.
+const isVisible = o => !o.hidden || S.revealed[o.id];
+
+// Чем даётся взятка — целиком дело контента (шоколадка, коньяк, что угодно).
+const currency = () => (GAME.meta.currency || '🍫');
+
+/* Директору важно количество виз, а не состав: нужно набрать stampsNeeded
+   из всех кабинетов, которые их дают. Какие именно — выбор игрока. */
+const stampsNeeded = () => GAME.start.stampsNeeded || GAME.offices.filter(o => o.required).length;
+const stampsGot = () => GAME.offices.filter(o => o.required && S.stamps[o.id]).length;
+const requiredLeft = () => Math.max(0, stampsNeeded() - stampsGot());
+const isOpen = o => o.final ? requiredLeft() === 0 : true;
+
+/* Настойчивость: каждая неудачная попытка в кабинете утяжеляет исходы с визой.
+   Без этого невезение в одном кабинете съедало весь рабочий день. */
+const PERSISTENCE = 1.0;
+const boostOf = officeId => 1 + PERSISTENCE * (S.fails[officeId] || 0);
+const weightOf = (out, boost) => (out.w || 1) * (out.stamp ? boost : 1);
+
+function pick(outcomes, boost = 1) {
+  const total = outcomes.reduce((s, o) => s + weightOf(o, boost), 0);
+  let r = Math.random() * total;
+  for (const o of outcomes) {
+    r -= weightOf(o, boost);
+    if (r <= 0) return o;
+  }
+  return outcomes[outcomes.length - 1];
+}
+
+/* ——— применение эффектов ——— */
+
+function applyCost(minutes) {
+  S.time += minutes || 0;
+}
+
+// Возвращает список человекочитаемых изменений для строки «что произошло».
+function applyOutcome(out, ctx) {
+  const fx = [];
+  if (out.nerves) {
+    S.nerves = Math.max(0, Math.min(100, S.nerves + out.nerves));
+    fx.push({ plus: out.nerves > 0, text: (out.nerves > 0 ? '+' : '') + out.nerves + ' нервов' });
+  }
+  if (out.chocolate) {
+    S.chocolate = Math.max(0, S.chocolate + out.chocolate);
+    fx.push({ plus: out.chocolate > 0, text: (out.chocolate > 0 ? '+' : '') + out.chocolate + ' ' + currency() });
+  }
+  if (out.give && !S.items[out.give]) {
+    S.items[out.give] = true;
+    fx.push({ plus: true, text: 'получено: ' + GAME.items[out.give].name });
+  }
+  if (out.take && S.items[out.take]) {
+    delete S.items[out.take];
+    fx.push({ text: 'сдано: ' + GAME.items[out.take].name });
+  }
+  if (out.reveal && !S.revealed[out.reveal]) {
+    S.revealed[out.reveal] = true;
+    const o = office(out.reveal);
+    if (o) fx.push({ plus: true, text: 'на карте появился: ' + o.room });
+  }
+  if (out.set) {
+    Object.assign(S, out.set);          // сюжетный эффект на всю партию (транспорт и т.п.)
+    if (out.set.travelCost != null) fx.push({ plus: true, text: 'переходы теперь по ' + out.set.travelCost + ' мин' });
+  }
+  if (out.stamp && ctx && ctx.officeId) {
+    S.stamps[ctx.officeId] = true;
+    fx.push({ plus: true, text: 'ВИЗА ПОЛУЧЕНА' });
+  }
+  applyCost(out.time);
+  return fx;
+}
+
+function checkOver() {
+  if (S.over) return true;
+  if (S.nerves <= 0) { S.over = 'nerves'; renderEnding(); return true; }
+  if (S.time >= GAME.start.endTime) { S.over = 'time'; renderEnding(); return true; }
+  return false;
+}
+
+/* ——— рендер: шапка ——— */
+
+function header() {
+  const invItems = Object.keys(S.items)
+    .map(k => `<span title="${esc(GAME.items[k].hint || '')}">${GAME.items[k].emoji} ${esc(GAME.items[k].name)}</span>`)
+    .join('');
+
+  return `
+    <h1>${esc(GAME.meta.title)}</h1>
+    <div class="sub">${esc(GAME.meta.subtitle)}</div>
+    <div class="status">
+      <span>🕒 <b>${clock(S.time)}</b></span>
+      <span>😐 Нервы
+        <span class="bar ${S.nerves > 40 ? 'calm' : ''}"><i style="width:${S.nerves}%"></i></span>
+        <b>${S.nerves}</b>
+      </span>
+      <span>${currency()} <b>${S.chocolate}</b></span>
+      <span>📌 Визы: <b>${stampsGot()}/${stampsNeeded()}</b></span>
+    </div>
+    ${invItems ? `<div class="inv">В папке: ${invItems}</div>` : ''}
+  `;
+}
+
+/* ——— рендер: карта здания ——— */
+
+function renderMap() {
+  if (checkOver()) return;
+  if (isLunch()) return renderLunch();
+
+  const rows = GAME.offices.filter(isVisible).map(o => {
+    const done = !!S.stamps[o.id];
+    const open = isOpen(o);
+    let tag = '';
+    if (done) tag = '✔ ВИЗА';
+    else if (!open) tag = `🔒 нужно виз: ${requiredLeft()}`;
+    else if (o.required) tag = 'даёт визу';
+    else if (S.seen[o.id]) tag = 'был';
+
+    return `
+      <button class="office ${done ? 'done' : ''} ${!open ? 'locked' : ''}"
+              ${done || !open ? 'disabled' : ''} onclick="goTo('${o.id}')">
+        <span class="tag">${tag}</span>
+        ${o.emoji} <b>${esc(o.name)}</b><br>
+        <span class="room">${esc(o.room)} · ${esc(o.official)}</span>
+      </button>`;
+  }).join('');
+
+  document.getElementById('app').innerHTML = header() + `
+    <div class="text">Ты стоишь в коридоре с папкой в руках. Куда идти?</div>
+    ${rows}`;
+}
+
+/* ——— переход по коридору ——— */
+
+function goTo(id) {
+  applyCost(S.travelCost);
+
+  // Случайное событие в коридоре — четверть переходов.
+  let ev = null, fx = null;
+  if (Math.random() < 0.25 && GAME.corridor.length) {
+    ev = GAME.corridor[Math.floor(Math.random() * GAME.corridor.length)];
+    fx = applyOutcome(ev, null);
+  }
+  if (checkOver()) return;
+  if (isLunch()) return renderLunch();
+
+  if (ev) {
+    document.getElementById('app').innerHTML = header() + `
+      <div class="scene-head"><span class="who">🚶 Коридор</span></div>
+      <div class="result">${esc(ev.text)}</div>
+      ${fxLine(fx)}
+      <button class="opt" onclick="enter('${id}')">Идти дальше →</button>`;
+    return;
+  }
+  enter(id);
+}
+
+/* ——— рендер: кабинет ——— */
+
+function enter(id) {
+  if (checkOver()) return;
+  if (isLunch()) return renderLunch();
+
+  const o = office(id);
+  const first = !S.seen[id];
+  S.seen[id] = true;
+
+  renderScene(o, (first ? o.intro : (o.intro2 || o.intro)), null, null);
+}
+
+function options(o) {
+  // `once` — опция срабатывает один раз за партию. Без неё выгодные исходы
+  // (например, тот, что отматывает время назад) фармятся до бесконечности.
+  const list = o.options
+    .map((opt, i) => ({ opt, key: 'o' + i }))
+    .filter(({ opt, key }) => !(opt.once && S.used[o.id + ':' + key]));
+
+  // Универсальные опции — только там, где вообще нужна виза: иначе игрок
+  // спустит взятку в кабинете выдачи предметов и закроет его себе навсегда.
+  // Опция с `use` требует предмет, остальные — валюту; новые джокеры
+  // добавляются в GAME.generic без правки движка.
+  if (o.required || o.final) {
+    for (const [name, opt] of Object.entries(GAME.generic)) {
+      if (name === 'leave') continue;
+      const available = opt.use ? S.items[opt.use] : S.chocolate > 0;
+      if (available) list.push({ opt, key: 'g_' + name });
+    }
+  }
+  list.push({ opt: GAME.generic.leave, key: 'g_leave' });
+
+  return list;
+}
+
+function renderScene(o, text, result, fx) {
+  const buttons = options(o).map(({ opt, key }) => {
+    const blocked = opt.need && !S.items[opt.need];
+    const need = blocked ? `<span class="need">нужно: ${esc(GAME.items[opt.need].name)}</span>` : '';
+    return `<button class="opt" ${blocked ? 'disabled' : ''} onclick="choose('${o.id}','${key}')">
+              ${esc(opt.text)}${need}
+            </button>`;
+  }).join('');
+
+  document.getElementById('app').innerHTML = header() + `
+    <div class="scene-head">
+      <span class="who">${o.emoji} ${esc(o.official)}</span><br>
+      <span class="room">${esc(o.room)} — ${esc(o.name)}</span>
+      ${wornOut(o.id)}
+    </div>
+    ${result ? `<div class="result">${esc(result)}</div>${fxLine(fx)}` : `<div class="text">${esc(text)}</div>`}
+    ${buttons}`;
+}
+
+/* Подсказка, что настойчивость копится: игрок должен видеть, что долбиться — рабочая тактика. */
+function wornOut(officeId) {
+  const f = S.fails[officeId] || 0;
+  if (f < 2) return '';
+  const line = f >= 4
+    ? 'Он смотрит на тебя как на погоду за окном. Сопротивление сломлено.'
+    : 'Он уже подустал от тебя.';
+  return `<br><span class="room" style="color:var(--ok)">${line} (шанс визы выше)</span>`;
+}
+
+function fxLine(fx) {
+  if (!fx || !fx.length) return '';
+  return `<div class="fx">${fx.map(f => `<b class="${f.plus ? 'plus' : ''}">${esc(f.text)}</b>`).join(' · ')}</div>`;
+}
+
+function choose(officeId, key) {
+  const o = office(officeId);
+  const opt = key.startsWith('g_') ? GAME.generic[key.slice(2)] : o.options[Number(key.slice(1))];
+
+  if (opt.need && !S.items[opt.need]) return;
+  if (opt.use) delete S.items[opt.use];   // расходуемый предмет (джокер)
+  if (opt.once) S.used[officeId + ':' + key] = true;
+
+  applyCost(opt.time != null ? opt.time : (o.time || 20));
+
+  const out = pick(opt.outcomes, boostOf(officeId));
+  const fx = applyOutcome(out, { officeId });
+
+  // Копим настойчивость только там, где виза вообще нужна.
+  if (o.required || o.final) {
+    if (out.stamp) delete S.fails[officeId];
+    else if (key !== 'g_leave') S.fails[officeId] = (S.fails[officeId] || 0) + 1;
+  }
+
+  if (checkOver()) return;
+
+  // Виза получена, финальный кабинет пройден, или игрок сам вышел — возврат на карту.
+  if (out.stamp && o.final) { S.over = 'win'; return renderEnding(); }
+  if (out.stamp || key === 'g_leave') {
+    document.getElementById('app').innerHTML = header() + `
+      <div class="scene-head">
+        <span class="who">${o.emoji} ${esc(o.official)}</span><br>
+        <span class="room">${esc(o.room)} — ${esc(o.name)}</span>
+      </div>
+      <div class="result">${esc(out.text)}</div>
+      ${out.stamp ? '<div class="stamp">СОГЛАСОВАНО</div><br>' : ''}
+      ${fxLine(fx)}
+      <button class="opt" onclick="renderMap()">← В коридор</button>`;
+    return;
+  }
+
+  renderScene(o, null, out.text, fx);
+}
+
+/* ——— обед: всё закрыто ——— */
+
+function renderLunch(result, fx) {
+  if (S.time >= GAME.lunch.to) return renderMap();
+
+  const buttons = GAME.lunchOptions.map((opt, i) =>
+    `<button class="opt" onclick="doLunch(${i})">${esc(opt.text)}</button>`).join('');
+
+  document.getElementById('app').innerHTML = header() + `
+    <div class="scene-head">
+      <span class="who">🍽️ ОБЕД</span><br>
+      <span class="room">с 13:00 до 14:00 · все кабинеты закрыты</span>
+    </div>
+    ${result
+      ? `<div class="result">${esc(result)}</div>${fxLine(fx)}`
+      : '<div class="text">Здание вымерло. Коридоры пусты. Ты стоишь с папкой и понимаешь, что следующий час тебе не принадлежит.</div>'}
+    ${buttons}
+    <button class="opt" onclick="waitLunch()">⏳ Просто ждать до 14:00</button>`;
+}
+
+function doLunch(i) {
+  const opt = GAME.lunchOptions[i];
+  applyCost(opt.time || 20);
+  const out = pick(opt.outcomes);
+  const fx = applyOutcome(out, null);
+  if (checkOver()) return;
+  renderLunch(out.text, fx);
+}
+
+function waitLunch() {
+  S.time = GAME.lunch.to;
+  if (checkOver()) return;
+  renderMap();
+}
+
+/* ——— финал ——— */
+
+function renderEnding() {
+  const e = GAME.endings[S.over];
+  const win = S.over === 'win';
+  const rank = win ? GAME.ranks.find(r => S.nerves >= r.min) : null;
+  const best = win ? saveBest(S.time) : loadBest();
+
+  document.getElementById('app').innerHTML = header() + `
+    <div class="final">
+      ${win ? '<div class="stamp">СОГЛАСОВАНО</div>' : ''}
+      <h2>${esc(e.title)}</h2>
+      <div class="text">${esc(e.text)}</div>
+      ${rank ? `<div class="rank"><b>${esc(rank.title)}</b><br>${esc(rank.text)}<br>
+                 Управился к ${clock(S.time)}. Нервов осталось: ${S.nerves}.</div>` : ''}
+      ${best ? `<div class="rank">Личный рекорд: согласовано к ${clock(best)}.</div>` : ''}
+      <br><button class="opt" onclick="newGame()">Начать новый рабочий день</button>
+    </div>`;
+}
+
+/* Рекорд — по времени окончания. localStorage на file:// местами капризен, поэтому try/catch. */
+function loadBest() {
+  try { const v = localStorage.getItem('soglasovanie_best'); return v ? Number(v) : null; }
+  catch (e) { return null; }
+}
+function saveBest(time) {
+  const prev = loadBest();
+  const best = prev === null ? time : Math.min(prev, time);
+  try { localStorage.setItem('soglasovanie_best', String(best)); } catch (e) {}
+  return best;
+}
+
+newGame();
+</script>
+</body>
+</html>
