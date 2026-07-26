@@ -171,6 +171,10 @@ const isVisible = o => !o.hidden || S.revealed[o.id];
 // Чем даётся взятка — целиком дело контента (шоколадка, коньяк, что угодно).
 const currency = () => (GAME.meta.currency || '🍫');
 
+// Подписи интерфейса. Сеттинг не должен торчать из движка: контент задаёт
+// GAME.ui, а эти значения — запасные, на случай если чего-то не описали.
+const ui = (key, fallback) => (GAME.ui && GAME.ui[key]) || fallback;
+
 /* Директору важно количество виз, а не состав: нужно набрать stampsNeeded
    из всех кабинетов, которые их дают. Какие именно — выбор игрока. */
 const stampsNeeded = () => GAME.start.stampsNeeded || GAME.offices.filter(o => o.required).length;
@@ -291,7 +295,7 @@ function renderMap() {
   }).join('');
 
   document.getElementById('app').innerHTML = header() + `
-    <div class="text">Ты стоишь в коридоре с папкой в руках. Куда идти?</div>
+    <div class="text">${esc(ui('hub', 'Ты стоишь в коридоре с папкой в руках. Куда идти?'))}</div>
     ${rows}`;
 }
 
@@ -311,10 +315,10 @@ function goTo(id) {
 
   if (ev) {
     document.getElementById('app').innerHTML = header() + `
-      <div class="scene-head"><span class="who">🚶 Коридор</span></div>
+      <div class="scene-head"><span class="who">${esc(ui('travel', '🚶 Коридор'))}</span></div>
       <div class="result">${esc(ev.text)}</div>
       ${fxLine(fx)}
-      <button class="opt" onclick="enter('${id}')">Идти дальше →</button>`;
+      <button class="opt" onclick="enter('${id}')">${esc(ui('next', 'Идти дальше →'))}</button>`;
     return;
   }
   enter(id);
@@ -422,7 +426,7 @@ function choose(officeId, key) {
       <div class="result">${esc(out.text)}</div>
       ${out.stamp ? '<div class="stamp">СОГЛАСОВАНО</div><br>' : ''}
       ${fxLine(fx)}
-      <button class="opt" onclick="renderMap()">← В коридор</button>`;
+      <button class="opt" onclick="renderMap()">${esc(ui('back', '← В коридор'))}</button>`;
     return;
   }
 
@@ -439,14 +443,14 @@ function renderLunch(result, fx) {
 
   document.getElementById('app').innerHTML = header() + `
     <div class="scene-head">
-      <span class="who">🍽️ ОБЕД</span><br>
-      <span class="room">с 13:00 до 14:00 · все кабинеты закрыты</span>
+      <span class="who">${esc(ui('lunchTitle', '🍽️ ОБЕД'))}</span><br>
+      <span class="room">${esc(ui('lunchWhen', 'все закрыто'))}</span>
     </div>
     ${result
       ? `<div class="result">${esc(result)}</div>${fxLine(fx)}`
-      : '<div class="text">Здание вымерло. Коридоры пусты. Ты стоишь с папкой и понимаешь, что следующий час тебе не принадлежит.</div>'}
+      : `<div class="text">${esc(ui('lunchText', 'Всё закрыто. Ты стоишь с папкой и понимаешь, что следующий час тебе не принадлежит.'))}</div>`}
     ${buttons}
-    <button class="opt" onclick="waitLunch()">⏳ Просто ждать до 14:00</button>`;
+    <button class="opt" onclick="waitLunch()">${esc(ui('lunchWait', '⏳ Просто ждать'))}</button>`;
 }
 
 function doLunch(i) {
@@ -480,7 +484,7 @@ function renderEnding() {
       ${rank ? `<div class="rank"><b>${esc(rank.title)}</b><br>${esc(rank.text)}<br>
                  Управился к ${clock(S.time)}. Нервов осталось: ${S.nerves}.</div>` : ''}
       ${best ? `<div class="rank">Личный рекорд: согласовано к ${clock(best)}.</div>` : ''}
-      <br><button class="opt" onclick="newGame()">Начать новый рабочий день</button>
+      <br><button class="opt" onclick="newGame()">${esc(ui('restart', 'Начать день заново'))}</button>
     </div>`;
 }
 
