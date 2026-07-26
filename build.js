@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SRC = path.join(__dirname, 'src');
-const CONTENT = process.argv[2] || 'content-18.js';   // node build.js content.js — приличная версия
+const CONTENT = process.argv[2] || 'content-18.js';
 
 const html = fs.readFileSync(path.join(SRC, 'index.html'), 'utf8');
 const content = fs.readFileSync(path.join(SRC, CONTENT), 'utf8');

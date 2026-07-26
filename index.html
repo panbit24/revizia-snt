@@ -131,9 +131,8 @@
 <div id="app"></div>
 <script>
 /*
- * РЕВИЗИЯ 18+ — весь контент игры. Версия для взрослых.
- * Приличный офисный вариант лежит рядом в content.js, переключается одной
- * строкой в index.html. Движок общий, он про тон и сеттинг ничего не знает.
+ * РЕВИЗИЯ 18+ — весь контент игры. Движок (index.html) про тон и сеттинг
+ * ничего не знает: участки, персонажи, реплики и исходы живут здесь.
  *
  * Сеттинг: СНТ «Синий учитель», суббота, день общего собрания.
  * Герой — член ревизионной комиссии, в садоводстве известен как Болгарин.
@@ -158,7 +157,7 @@ const GAME = {
 
   lunch: { from: 780, to: 840 },  // 13:00–14:00, жара и шашлык, все спят
 
-  // Подписи интерфейса — чтобы движок не навязывал офисные «коридоры».
+  // Подписи интерфейса — движок берёт их отсюда, а не зашивает у себя.
   ui: {
     hub: 'Ты стоишь на улице у своей калитки, папка под мышкой. Где-то жарят, где-то пилят, где-то уже поют. Куда идти?',
     travel: '🚶 По улице',
@@ -1439,13 +1438,13 @@ function renderEnding() {
 
 /* Рекорд — по времени окончания. localStorage на file:// местами капризен, поэтому try/catch. */
 function loadBest() {
-  try { const v = localStorage.getItem('soglasovanie_best'); return v ? Number(v) : null; }
+  try { const v = localStorage.getItem('snt_revizor_best'); return v ? Number(v) : null; }
   catch (e) { return null; }
 }
 function saveBest(time) {
   const prev = loadBest();
   const best = prev === null ? time : Math.min(prev, time);
-  try { localStorage.setItem('soglasovanie_best', String(best)); } catch (e) {}
+  try { localStorage.setItem('snt_revizor_best', String(best)); } catch (e) {}
   return best;
 }
 

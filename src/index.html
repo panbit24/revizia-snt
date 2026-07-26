@@ -490,13 +490,13 @@ function renderEnding() {
 
 /* Рекорд — по времени окончания. localStorage на file:// местами капризен, поэтому try/catch. */
 function loadBest() {
-  try { const v = localStorage.getItem('soglasovanie_best'); return v ? Number(v) : null; }
+  try { const v = localStorage.getItem('snt_revizor_best'); return v ? Number(v) : null; }
   catch (e) { return null; }
 }
 function saveBest(time) {
   const prev = loadBest();
   const best = prev === null ? time : Math.min(prev, time);
-  try { localStorage.setItem('soglasovanie_best', String(best)); } catch (e) {}
+  try { localStorage.setItem('snt_revizor_best', String(best)); } catch (e) {}
   return best;
 }
 
