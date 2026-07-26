@@ -424,7 +424,7 @@ function choose(officeId, key) {
         <span class="room">${esc(o.room)} — ${esc(o.name)}</span>
       </div>
       <div class="result">${esc(out.text)}</div>
-      ${out.stamp ? '<div class="stamp">СОГЛАСОВАНО</div><br>' : ''}
+      ${out.stamp ? `<div class="stamp">${esc(ui('stampWord', 'СОГЛАСОВАНО'))}</div><br>` : ''}
       ${fxLine(fx)}
       <button class="opt" onclick="renderMap()">${esc(ui('back', '← В коридор'))}</button>`;
     return;
@@ -478,7 +478,7 @@ function renderEnding() {
 
   document.getElementById('app').innerHTML = header() + `
     <div class="final">
-      ${win ? '<div class="stamp">СОГЛАСОВАНО</div>' : ''}
+      ${win ? `<div class="stamp">${esc(ui('stampWord', 'СОГЛАСОВАНО'))}</div>` : ''}
       <h2>${esc(e.title)}</h2>
       <div class="text">${esc(e.text)}</div>
       ${rank ? `<div class="rank"><b>${esc(rank.title)}</b><br>${esc(rank.text)}<br>
